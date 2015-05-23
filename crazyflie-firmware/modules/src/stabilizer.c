@@ -532,6 +532,7 @@ PARAM_GROUP_STOP(altHold)
 //#include "ms5611.h"
 #include "lps25h.h"
 #include "debug.h"
+#include <stdlib.h>
 
 static Axis3f gyro; // Gyro axis data in deg/s
 static Axis3f acc;  // Accelerometer axis data in mG
@@ -585,6 +586,118 @@ static void stabilizerTask(void* param);
 
 static bool isInit;
 
+typedef struct matrix {
+   uint32_t rows;
+   uint32_t cols;
+   float * elems;
+} matrix;
+
+#define ELEM(mtx, row, col) \
+  mtx->elems[col * mtx->rows + row]
+
+
+/* Creates a ``rows by cols'' matrix with all values 0.
+ * Returns NULL if rows <= 0 or cols <= 0 and otherwise a
+ * pointer to the new matrix.
+ */
+matrix * newMatrix(int rows, int cols) {
+  if (rows <= 0 || cols <= 0) return NULL;
+
+  // allocate a matrix structure
+  matrix * m = (matrix *) malloc(sizeof(matrix));
+
+  // set dimensions
+  m->rows = rows;
+  m->cols = cols;
+
+  // allocate a float array of length rows * cols
+  m->elems = (float *) malloc(rows*cols*sizeof(float));
+  // set all elems to 0
+  int i;
+  for (i = 0; i < rows*cols; i++)
+    m->elems[i] = 0.0;
+
+  return m;
+}
+
+/* Writes the product of matrices mtx1 and mtx2 into matrix
+ * prod.
+ */
+void product(matrix * mtx1, matrix * mtx2, matrix * prod) {
+  int row, col, k;
+  for (col = 0; col < mtx2->cols; col++)
+    for (row = 0; row < mtx1->rows; row++) {
+      float val = 0.0;
+      for (k = 0; k < mtx1->cols; k++)
+        val += ELEM(mtx1, row, k) * ELEM(mtx2, k, col);
+      ELEM(prod, row, col) = val;
+    }
+}
+
+///* Prints the matrix to stdout.  Returns 0 if successful
+// * and -1 if mtx is NULL.
+// */
+//int printMatrix(matrix * mtx) {
+//  if (!mtx) return -1;
+//
+//  int row, col;
+//  for (row = 0; row < mtx->rows; row++) {
+//    for (col = 0; col < mtx->cols; col++) {
+//      // Print the floating-point element with
+//      //  - either a - if negative or a space if positive
+//      //  - at least 3 spaces before the .
+//      //  - precision to the hundredths place
+//      printf("% 6.2f ", ELEM(mtx, row, col));
+//    }
+//    // separate rows by newlines
+//    printf("\n");
+//  }
+//  return 0;
+//}
+//
+///* Copies a matrix.  Returns NULL if mtx is NULL.
+// */
+//matrix * copyMatrix(matrix * mtx) {
+//  if (!mtx) return NULL;
+//
+//  // create a new matrix to hold the copy
+//  matrix * cp = newMatrix(mtx->rows, mtx->cols);
+//
+//  // copy mtx's elems to cp's elems
+//  memcpy(cp->elems, mtx->elems,
+//         mtx->rows * mtx->cols * sizeof(float));
+//
+//  return cp;
+//}
+//
+
+/* Writes the transpose of matrix in into matrix out.
+ * Returns 0 if successful, -1 if either in or out is NULL,
+ * and -2 if the dimensions of in and out are incompatible.
+ */
+int transpose(matrix * in, matrix * out) {
+  int row, col;
+  for (row = 0; row < in->rows; row++)
+    for (col = 0; col < in->cols; col++)
+      ELEM(out, col, row) = ELEM(in, row, col);
+  return 0;
+}
+
+/* Writes the sum of matrices mtx1 and mtx2 into matrix
+ * sum. Returns 0 if successful, -1 if any of the matrices
+ * are NULL, and -2 if the dimensions of the matrices are
+ * incompatible.
+ */
+int matrixSum(matrix * mtx1, matrix * mtx2, matrix * sum) {
+  int row, col;
+  for (col = 0; col < mtx1->cols; col++)
+    for (row = 0; row < mtx1->rows; row++)
+      ELEM(sum, row, col) =
+        ELEM(mtx1, row, col) + ELEM(mtx2, row, col);
+  return 0;
+}
+
+
 void stabilizerInit(void)
 {
   if(isInit)
@@ -630,33 +743,6 @@ static uint16_t limitThrust(int32_t value)
 
   return (uint16_t)value;
 }
-
-typedef struct matrix {
-   uint32_t rows;
-   uint32_t columns;
-   //float * data;
-   float elements[][];
-} matrix;
-
-// inspired by http://www.programiz.com/c-programming/examples/matrix-multiplication-function
-void multiplication(matrix *a, matrix *b, matrix *result){//(int a[][10],int b[][10],int mult[][10],int r1,int c1,int r2,int c2){
-
-	int i,j,k;
-	result.rows = a->rows;
-	result.columns = b->columns;
-
-	/* Multiplying matrix a and b and storing in array mult. */
-	for(i=0; i<a.rows; ++i){
-		for(j=0; j<b.columns; ++j){
-			float temp = 0;/* Initializing elements of matrix mult to 0.*/
-			for(k=0; k<a.columns; ++k){
-				temp+=a.elements[i][k]*b.elements[k][j];
-			}
-			result.elements[i][j]=temp;
-		}
-	}
-}
-
 
 LOG_GROUP_START(stabilizer)
 LOG_ADD(LOG_FLOAT, roll, &eulerRollActual)
@@ -710,6 +796,9 @@ static void stabilizerTask(void* param){
 	systemWaitStart();
 
 	lastWakeTime = xTaskGetTickCount ();
+
+	matrix * Kmat = newMatrix(4,8);
+	matrix * Krmat = newMatrix(4,8);
 
 	while(1){
 		vTaskDelayUntil(&lastWakeTime, F2T(IMU_UPDATE_FREQ)); // 500Hz

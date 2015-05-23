@@ -5,6 +5,7 @@
 *.dll
 *.exe
 *.o
+*.o.d
 *.so
 
 *.bin
