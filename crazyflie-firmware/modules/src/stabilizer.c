@@ -631,18 +631,28 @@ static uint16_t limitThrust(int32_t value)
   return (uint16_t)value;
 }
 
+typedef struct matrix {
+   uint32_t rows;
+   uint32_t columns;
+   //float * data;
+   float elements[][];
+} matrix;
 
 // inspired by http://www.programiz.com/c-programming/examples/matrix-multiplication-function
-void multiplication(int a[][10],int b[][10],int mult[][10],int r1,int c1,int r2,int c2){
+void multiplication(matrix *a, matrix *b, matrix *result){//(int a[][10],int b[][10],int mult[][10],int r1,int c1,int r2,int c2){
+
 	int i,j,k;
+	result.rows = a->rows;
+	result.columns = b->columns;
 
 	/* Multiplying matrix a and b and storing in array mult. */
-	for(i=0; i<r1; ++i){
-		for(j=0; j<c2; ++j){
-			mult[i][j]=0;/* Initializing elements of matrix mult to 0.*/
-			for(k=0; k<c1; ++k){
-				mult[i][j]+=a[i][k]*b[k][j];
+	for(i=0; i<a.rows; ++i){
+		for(j=0; j<b.columns; ++j){
+			float temp = 0;/* Initializing elements of matrix mult to 0.*/
+			for(k=0; k<a.columns; ++k){
+				temp+=a.elements[i][k]*b.elements[k][j];
 			}
+			result.elements[i][j]=temp;
 		}
 	}
 }
