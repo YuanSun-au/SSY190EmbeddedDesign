@@ -1,0 +1,33 @@
+digraph train {
+	"g,g,a,a" -> "g,r,w,a" [label="g,g,a,-"];
+	"g,g,a,a" -> "r,g,a,w" [label="g,g,-,a"];
+	"g,g,a,a" -> "r,g,w,w" [label="g,g,a,a"];
+	
+	"r,g,a,w" -> "r,g,a,b" [label="r,g,-,-"];
+	"r,g,a,w" -> "r,g,w,b" [label="r,g,-,b"];
+	"r,g,a,w" -> "r,r,w,w" [label="r,g,a,-"];
+
+	"r,g,a,b" -> "g,g,a,a" [label="r,g,-,l"];
+	"r,g,a,b" -> "g,g,w,a" [label="r,g,a,l"];
+	
+	"g,r,w,a" -> "g,r,b,a" [label="g,r,-,-"];
+	"g,r,w,a" -> "g,r,b,w" [label="g,r,-,a"];
+	"g,r,w,a" -> "r,r,w,w" [label="g,r,-,a"]
+
+	"r,g,w,b" -> "g,g,w,a" [label="r,g,-,l"];
+	
+	"r,g,b,w" -> "r,g,b,b" [label="r,g,-,-"];
+	
+	"g,r,b,w" -> "g,g,a,w" [label="g,r,l,-"];
+	
+	"g,g,w,a" -> "g,r,b,a" [label="g,r,-,-"];
+	"g,g,w,a" -> "r,g,b,w" [label="g,g,-,a"];
+
+	"g,g,a,w" -> "r,g,a,b" [label="r,g,-,-"];
+
+	"r,g,a,b" -> "g,g,a,a" [label="r,g,a,l"];
+	
+	"r,g,w,w" -> "r,g,w,b" [label="r,g,-,-"];
+	
+	"g,r,b,a" -> "g,g,a,a" [label="g,r,l,-"];
+}

@@ -1,0 +1,4 @@
+digraph G {
+	g,g,a,a -> g,g,a,w;
+	g,g,a,a -> g,g,w,a;
+}
