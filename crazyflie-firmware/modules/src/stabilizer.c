@@ -557,6 +557,8 @@ static float aslLong; // long term asl
 
 static float accWZ     = 0.0;
 static float accMAG    = 0.0;
+static float velZ = 0;
+static float posZ = 0;
 //static float vSpeedASL = 0.0;
 //static float vSpeedAcc = 0.0;
 //static float vSpeed    = 0.0; // Vertical speed (world frame) integrated from vertical acceleration
@@ -575,6 +577,39 @@ uint32_t motorPowerM2;
 uint32_t motorPowerM3;
 uint32_t motorPowerM4;
 
+// Not used at the moment!!
+////////////////////////////////////////
+/*
+// Initialize the Kr matrix
+
+static float Kr[4][8] = {
+    {1666441.80442853, -1679786.34804454, 73711.8622141450, -833219614.601239, 839893184.483136, -36856102.5762756, 2291801557.65930, -1145900778829.65},
+    {1666441.80442648, 1679786.38988786, -73712.5480879171, -833219614.601238, -839893184.483054, 36856102.5749039, 2291801557.65930, -1145900778829.65},
+    { -1666436.65400078, 1679786.38988783, 73711.8622140798, 833219614.611538, -839893184.483054, -36856102.5762756, 2291801557.65930, -1145900778829.65},
+    { -1666436.65399870, -1679786.34804458, -73712.5480885769, 833219614.611538, 839893184.483136, 36856102.5749038, 2291801557.65930, -1145900778829.65}
+};
+*/
+
+// Initialize the K matrix
+/*
+ static float K[4][8] = {
+	{0, 0, 0, -7.30524939275438e-37, 2.82955664549963e-36, 2.42267293103331e-36, 0, -3.45043029107532e-48},
+	{0, 0, 0, -7.30524939275438e-37, 2.82955664549963e-36, 2.42267293103331e-36, 0, -3.45043029107532e-48},
+	{0, 0, 0, 7.30524939275438e-37, -2.82955664549963e-36, -2.42267293103331e-36, 0, 3.45043029107532e-48},
+	{0, 0, 0, 7.30524939275438e-37, -2.82955664549963e-36, -2.42267293103331e-36, 0, 3.45043029107532e-48}
+ };
+ */
+////////////////////////////////////////
+
+static float K[4][8] = {
+    {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
+    {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
+    {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2},
+    {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2}
+};
+
+float r[4];
+
 #define FUSION_UPDATE_DT  (float)(1.0 / (IMU_UPDATE_FREQ )) // 500hz
 
 
@@ -585,118 +620,6 @@ static uint16_t limitThrust(int32_t value);
 static void stabilizerTask(void* param);
 
 static bool isInit;
-
-typedef struct matrix {
-   uint32_t rows;
-   uint32_t cols;
-   float * elems;
-} matrix;
-
-#define ELEM(mtx, row, col) \
-  mtx->elems[col * mtx->rows + row]
-
-
-/* Creates a ``rows by cols'' matrix with all values 0.
- * Returns NULL if rows <= 0 or cols <= 0 and otherwise a
- * pointer to the new matrix.
- */
-matrix * newMatrix(int rows, int cols) {
-  if (rows <= 0 || cols <= 0) return NULL;
-
-  // allocate a matrix structure
-  matrix * m = (matrix *) malloc(sizeof(matrix));
-
-  // set dimensions
-  m->rows = rows;
-  m->cols = cols;
-
-  // allocate a float array of length rows * cols
-  m->elems = (float *) malloc(rows*cols*sizeof(float));
-  // set all elems to 0
-  int i;
-  for (i = 0; i < rows*cols; i++)
-    m->elems[i] = 0.0;
-
-  return m;
-}
-
-/* Writes the product of matrices mtx1 and mtx2 into matrix
- * prod.
- */
-void product(matrix * mtx1, matrix * mtx2, matrix * prod) {
-  int row, col, k;
-  for (col = 0; col < mtx2->cols; col++)
-    for (row = 0; row < mtx1->rows; row++) {
-      float val = 0.0;
-      for (k = 0; k < mtx1->cols; k++)
-        val += ELEM(mtx1, row, k) * ELEM(mtx2, k, col);
-      ELEM(prod, row, col) = val;
-    }
-}
-
-///* Prints the matrix to stdout.  Returns 0 if successful
-// * and -1 if mtx is NULL.
-// */
-//int printMatrix(matrix * mtx) {
-//  if (!mtx) return -1;
-//
-//  int row, col;
-//  for (row = 0; row < mtx->rows; row++) {
-//    for (col = 0; col < mtx->cols; col++) {
-//      // Print the floating-point element with
-//      //  - either a - if negative or a space if positive
-//      //  - at least 3 spaces before the .
-//      //  - precision to the hundredths place
-//      printf("% 6.2f ", ELEM(mtx, row, col));
-//    }
-//    // separate rows by newlines
-//    printf("\n");
-//  }
-//  return 0;
-//}
-//
-///* Copies a matrix.  Returns NULL if mtx is NULL.
-// */
-//matrix * copyMatrix(matrix * mtx) {
-//  if (!mtx) return NULL;
-//
-//  // create a new matrix to hold the copy
-//  matrix * cp = newMatrix(mtx->rows, mtx->cols);
-//
-//  // copy mtx's elems to cp's elems
-//  memcpy(cp->elems, mtx->elems,
-//         mtx->rows * mtx->cols * sizeof(float));
-//
-//  return cp;
-//}
-//
-
-/* Writes the transpose of matrix in into matrix out.
- * Returns 0 if successful, -1 if either in or out is NULL,
- * and -2 if the dimensions of in and out are incompatible.
- */
-int transpose(matrix * in, matrix * out) {
-  int row, col;
-  for (row = 0; row < in->rows; row++)
-    for (col = 0; col < in->cols; col++)
-      ELEM(out, col, row) = ELEM(in, row, col);
-  return 0;
-}
-
-/* Writes the sum of matrices mtx1 and mtx2 into matrix
- * sum. Returns 0 if successful, -1 if any of the matrices
- * are NULL, and -2 if the dimensions of the matrices are
- * incompatible.
- */
-int matrixSum(matrix * mtx1, matrix * mtx2, matrix * sum) {
-  int row, col;
-  for (col = 0; col < mtx1->cols; col++)
-    for (row = 0; row < mtx1->rows; row++)
-      ELEM(sum, row, col) =
-        ELEM(mtx1, row, col) + ELEM(mtx2, row, col);
-  return 0;
-}
-
 
 void stabilizerInit(void)
 {
@@ -744,6 +667,74 @@ static uint16_t limitThrust(int32_t value)
   return (uint16_t)value;
 }
 
+// Update the control signal with LQR gain (Called from stabilizerTask)
+void updateControlSignal(void){
+    
+    int i,j;
+    
+    float y[8] = {(3.14*eulerRollActual)/180, (3.14*eulerPitchActual)/180, (3.14*eulerYawActual)/180, (3.14/180)*gyro.x, (3.14/180)*gyro.y, (3.14/180)*gyro.z, posZ, velZ};
+    
+    /* Multiplying matrix a and b and storing in array mult. */
+    for(i=0; i< 4; ++i){
+        float temp = 0;/* Initializing elements of matrix mult to 0.*/
+        for(j=0; j<8 ; ++j){ // Rows
+            temp+=K[i][j]*y[j];
+        }
+        r[i]=temp;
+    }
+}
+
+static void stabilizerTask(void* param){
+    
+    uint32_t lastWakeTime;
+    
+    vTaskSetApplicationTaskTag(0, (void*)TASK_STABILIZER_ID_NBR);
+    
+    //Wait for the system to be fully started to start stabilization loop
+    systemWaitStart();
+    
+    lastWakeTime = xTaskGetTickCount ();
+    
+    while(1){
+        vTaskDelayUntil(&lastWakeTime, F2T(IMU_UPDATE_FREQ)); // 500Hz
+        
+        // Magnetometer not yet used more then for logging.
+        imu9Read(&gyro, &acc, &mag);
+        
+        if (imu6IsCalibrated()){
+            commanderGetRPY(&eulerRollDesired, &eulerPitchDesired, &eulerYawDesired);
+            commanderGetRPYType(&rollType, &pitchType, &yawType);
+            sensfusion6UpdateQ(gyro.x, gyro.y, gyro.z, acc.x, acc.y, acc.z, FUSION_UPDATE_DT);
+            sensfusion6GetEulerRPY(&eulerRollActual, &eulerPitchActual, &eulerYawActual);
+            accWZ = sensfusion6GetAccZWithoutGravity(acc.x, acc.y, acc.z);
+            
+            velZ += accWZ*FUSION_UPDATE_DT;
+            posZ += posZ*FUSION_UPDATE_DT;
+            
+            //input: gyro.x, -gyro.y, gyro.z
+            commanderGetThrust(&thrustDesired);
+            
+            // Update control signal
+            
+            updateControlSignal();
+            
+            if (thrustDesired > 0.1){
+                //write output to motors directly, m1 m2 m3 and m4 must be set
+                motorsSetRatio(MOTOR_M1, limitThrust((uint32_t) UINT16_MAX*r[3])); //motors are between 0 and UINT16_MAX
+                motorsSetRatio(MOTOR_M2, limitThrust((uint32_t) UINT16_MAX*r[2]));
+                motorsSetRatio(MOTOR_M3, limitThrust((uint32_t) UINT16_MAX*r[1]));
+                motorsSetRatio(MOTOR_M4, limitThrust((uint32_t) UINT16_MAX*r[0]));
+                
+            }else{
+                motorsSetRatio(MOTOR_M1, 0); //motors are between 0 and UINT16_MAX
+                motorsSetRatio(MOTOR_M2, 0);
+                motorsSetRatio(MOTOR_M3, 0);
+                motorsSetRatio(MOTOR_M4, 0);
+            }
+        }
+    }
+}
+
 LOG_GROUP_START(stabilizer)
 LOG_ADD(LOG_FLOAT, roll, &eulerRollActual)
 LOG_ADD(LOG_FLOAT, pitch, &eulerPitchActual)
@@ -786,49 +777,4 @@ LOG_ADD(LOG_FLOAT, temp, &temperature)
 LOG_ADD(LOG_FLOAT, pressure, &pressure)
 LOG_GROUP_STOP(baro)
 
-
-static void stabilizerTask(void* param){
-	uint32_t lastWakeTime;
-
-	vTaskSetApplicationTaskTag(0, (void*)TASK_STABILIZER_ID_NBR);
-
-	//Wait for the system to be fully started to start stabilization loop
-	systemWaitStart();
-
-	lastWakeTime = xTaskGetTickCount ();
-
-	matrix * Kmat = newMatrix(4,8);
-	matrix * Krmat = newMatrix(4,8);
-
-	while(1){
-		vTaskDelayUntil(&lastWakeTime, F2T(IMU_UPDATE_FREQ)); // 500Hz
-
-		// Magnetometer not yet used more then for logging.
-		imu9Read(&gyro, &acc, &mag);
-
-		if (imu6IsCalibrated()){
-			commanderGetRPY(&eulerRollDesired, &eulerPitchDesired, &eulerYawDesired);
-			commanderGetRPYType(&rollType, &pitchType, &yawType);
-			sensfusion6UpdateQ(gyro.x, gyro.y, gyro.z, acc.x, acc.y, acc.z, FUSION_UPDATE_DT);
-			sensfusion6GetEulerRPY(&eulerRollActual, &eulerPitchActual, &eulerYawActual);
-
-			//input: gyro.x, -gyro.y, gyro.z
-			commanderGetThrust(&thrustDesired);
-
-			if (thrustDesired > 0){
-				//write output to motors directly, m1 m2 m3 and m4 must be set
-				motorsSetRatio(MOTOR_M1, limitThrust(0)); //motors are between 0 and UINT16_MAX
-				motorsSetRatio(MOTOR_M2, limitThrust(0));
-				motorsSetRatio(MOTOR_M3, limitThrust(0));
-				motorsSetRatio(MOTOR_M4, limitThrust((uint32_t)thrustDesired));
-
-			}else{
-				motorsSetRatio(MOTOR_M1, 0); //motors are between 0 and UINT16_MAX
-				motorsSetRatio(MOTOR_M2, 0);
-				motorsSetRatio(MOTOR_M3, 0);
-				motorsSetRatio(MOTOR_M4, 0);
-			}
-		}
-	}
-}
 #endif
