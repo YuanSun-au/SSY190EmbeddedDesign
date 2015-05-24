@@ -13,9 +13,12 @@
 *.elf
 *.hex
 *.map
+*.o.d
 version.c
 
-
+# Folders #
+###########
+crazyflie-firmware/bin/*
  
 # Packages #
 ############
