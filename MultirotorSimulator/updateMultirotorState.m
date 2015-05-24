@@ -45,7 +45,7 @@ alpha_3 = mr.Inertia\tXYZ3; % find angular acceleration of quadcopter in body co
 
 
 [dummy, alpha_3(3),alpha_3(2),alpha_3(1)]= readJoystick();
-alpha_3 = 50*alpha_3
+tXYZ3 = mr.Inertia*50*alpha_3;
 
 % acceleration_3= (1/mr.Mass)*fXYZ3; %find acceleration of quadcopter in body coordinates
 
@@ -77,20 +77,22 @@ R12 = [ cos(mr.Pitch)  0           sin(mr.Pitch);
 R23 = [ 1           0           0;
         0           cos(mr.Roll)   -sin(mr.Roll);
         0           sin(mr.Roll)   cos(mr.Roll)];
-    
-R13 = R12*R23;
+
+R02 = R01 *R12;
+
+% R32 =  inv(R23);
+% R31 = inv(R12*R23);  
+% R30 = inv(R01*R12*R23);
 R03 = R01*R12*R23;
 
-R32 =  inv(R23);
-R31 = inv(R12*R23);  
-R30 = inv(R01*R12*R23);
-
-alpha_0 = R30*alpha_3;
+alpha_0 = mr.Inertia\(R03\tXYZ3 - cross(mr.Omega,(mr.Inertia*mr.Omega)));
 mr.Omega = mr.Omega + dt*alpha_0;
 
-mr.Roll = mr.Roll + dt*R*mr.Omega;
-mr.Pitch = mr.Pitch + dt*mr.Omega;
-mr.Yaw = mr.Yaw + dt*R01*mr.Omega;
+temp = [R02(:,1), R01(:,2), [0; 0; 1]]\(dt*mr.Omega);
+
+mr.Roll = mr.Roll + temp(1);
+mr.Pitch = mr.Pitch + temp(2);
+mr.Yaw = mr.Yaw + temp(3);
 
 % %second derivative of roll,pitch,yaw
 % alpha_x_2 = R32(1,:)*alpha_3;

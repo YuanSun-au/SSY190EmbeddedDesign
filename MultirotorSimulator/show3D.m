@@ -135,6 +135,7 @@ ne  = fill3(NEBR(1,:),NEBR(2,:),NEBR(3,:),'c'); alpha(ne,0.8); % North East surf
 nw  = fill3(NWBR(1,:),NWBR(2,:),NWBR(3,:),grey); alpha(nw,0.8); % North West surface
 sw  = fill3(SWBR(1,:),SWBR(2,:),SWBR(3,:),'k'); alpha(sw,0.8); % South West surface
 se  = fill3(SEBR(1,:),SEBR(2,:),SEBR(3,:),grey); alpha(se,0.8); % South East surface
+plot3( [0 0.3*mr.Omega(1)], [0 0.3*mr.Omega(2)],[0 0.3*mr.Omega(3)]);
 axis square
 xlabel('X')
 ylabel('Y')
