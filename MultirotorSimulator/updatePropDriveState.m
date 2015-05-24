@@ -38,7 +38,7 @@ else% propeller dynamics modelled
 end
 
 pd.Lift = 2.7355e-11*rpm^2 - 5.2648e-08*rpm + 3.8542e-05;
-
+pd.Lift = pd.Lift * 9.82; % because it was in kg instead of Newtons
 %direction is taken as seen from above
 if strcmp(pd.Direction, 'CCW')
     pd.Torque = - pd.Torque;

@@ -63,17 +63,16 @@ R = [cos(mr.Yaw)*cos(mr.Pitch) cos(mr.Yaw)*sin(mr.Pitch)*sin(mr.Roll)-sin(mr.Yaw
        sin(mr.Yaw)*cos(mr.Pitch) sin(mr.Yaw)*sin(mr.Pitch)*sin(mr.Roll)+cos(mr.Yaw)*cos(mr.Roll) sin(mr.Yaw)*sin(mr.Pitch)*cos(mr.Roll)-cos(mr.Yaw)*sin(mr.Roll);
        -sin(mr.Pitch)         cos(mr.Pitch)*sin(mr.Roll)                            cos(mr.Pitch)*cos(mr.Roll)];
 
-% Rotate body frame velocity vector
-U = zeros(3,1);%A(:,7);
-V = zeros(3,1);%A(:,8);
-W = zeros(3,1);%A(:,9);
-Vi = zeros(3,3);
-MvMax= max(sqrt(U.^2+V.^2+W.^2)); 
-Vb = 3/MvMax*[U(1), V(1), W(1)]'; % Scale velocity
-Vi(1,:) = R*Vb; % Rotate velocity vector to inertial frame for plotting
+% % Rotate body frame velocity vector
+% U = ones(3,1);%A(:,7);
+% V = zeros(3,1);%A(:,8);
+% W = zeros(3,1);%A(:,9);
+% Vi = zeros(3,3);
+% MvMax= max(sqrt(U.^2+V.^2+W.^2)); 
+% Vb = 3/MvMax*[U(1), V(1), W(1)]'; % Scale velocity
+% Vi(1,:) = R*Vb; % Rotate velocity vector to inertial frame for plotting
 
-% Support for X-configuration nifty trick (Requires that quadModel
-% structure is in base workspace)
+% Support for X-configuration
 if (strcmp(mr.Mixing, 'X'))
     Rz = [ sqrt(2)/2, sqrt(2)/2, 0;
           -sqrt(2)/2,sqrt(2)/2, 0;
@@ -97,22 +96,22 @@ if (strcmp(mr.Mixing, 'X'))
 end
 
 % Rotate body parts Via Initialized R
-NrR = R*Nr;
-ErR = R*Er;
-WrR = R*Wr;
-SrR = R*Sr;
-mNr = R*mN;
-mEr = R*mE;
-mWr = R*mW;
-mSr = R*mS;
-bNSR = R*bNS;
-bEWR = R*bEW;
-TopR = R*Top;
-BotR = R*Bot;
-NEBR = R*NEB;
-NWBR = R*NWB;
-SWBR = R*SWB;
-SEBR = R*SEB;
+NrR = mr.Pos*ones(1,11) + R*Nr;
+ErR = mr.Pos*ones(1,11) + R*Er;
+WrR = mr.Pos*ones(1,11) + R*Wr;
+SrR = mr.Pos*ones(1,11) + R*Sr;
+mNr = mr.Pos*ones(1,2) + R*mN;
+mEr = mr.Pos*ones(1,2) + R*mE;
+mWr = mr.Pos*ones(1,2) + R*mW;
+mSr = mr.Pos*ones(1,2) + R*mS;
+bNSR = mr.Pos*ones(1,2) + R*bNS;
+bEWR = mr.Pos*ones(1,2) + R*bEW;
+TopR = mr.Pos*ones(1,4) + R*Top;
+BotR = mr.Pos*ones(1,4) + R*Bot;
+NEBR = mr.Pos*ones(1,4) + R*NEB;
+NWBR = mr.Pos*ones(1,4) + R*NWB;
+SWBR = mr.Pos*ones(1,4) + R*SWB;
+SEBR = mr.Pos*ones(1,4) + R*SEB;
 
 % Plot the box rotation and ang. velocity and inertial frame velocity
 % vector

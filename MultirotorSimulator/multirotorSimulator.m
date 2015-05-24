@@ -7,7 +7,7 @@ clf
 
 %-------simulator settings-----------
 maxSteps = 10000;
-frequency= 500; %hz
+frequency= 300; %hz
 
 dt =1/frequency;
 
@@ -16,11 +16,13 @@ collided = false;
 %epsilon = 0.0001;
 
 fps = 30; % how often to plot 
-slowmo = 20; % percentage of full playback speed
+slowmo = 100; % percentage of full playback speed
 showPlot = true;
 % recordResults = false;
 
 multirotor = createMultirotor();
+controllerLQR= createController();
+
 
 % if (recordResults)
 %     datalog = [];
@@ -34,23 +36,17 @@ end
 while ((iteration < maxSteps) && (~collided))
     clc
     fprintf('\n Type ctrl-C to stop\n')
-    time = iteration*dt;
     
-    iteration
+    time = iteration *dt
 
     [throttle, rudder, elevon, aileron]=readJoystick();
     if jst(5) ~= 0
         multirotor = createMultirotor(); %reset multirotor if button pushed
     end
-    pwms = controller(multirotor, throttle, rudder, elevon, aileron);
-     
+    pwms = controller(multirotor, controllerLQR, throttle, rudder, elevon, aileron)
+     multirotor.Pos
  
     [ multirotor ] = updateMultirotorState(multirotor, pwms ,dt );
-    %multirotor
-%     multirotor.PropDrives(1).Omega
-%     multirotor.PropDrives(2).Omega
-%     multirotor.PropDrives(3).Omega
-%     multirotor.PropDrives(4).Omega
 %     if (recordResults)
 %         datalog = logData(datalog,time, multirotor);
 %     end
