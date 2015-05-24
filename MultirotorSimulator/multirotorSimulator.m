@@ -42,8 +42,8 @@ while ((iteration < maxSteps) && (~collided))
     if jst(5) ~= 0
         multirotor = createMultirotor(); %reset multirotor if button pushed
     end
-    %pwms = controller(multirotor, throttle, rudder, elevon, aileron);
-    pwms = [0 0 0 0];  
+    pwms = controller(multirotor, throttle, rudder, elevon, aileron);
+     
  
     [ multirotor ] = updateMultirotorState(multirotor, pwms ,dt );
     %multirotor
