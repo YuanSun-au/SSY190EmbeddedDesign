@@ -24,22 +24,22 @@ yaw = quadcopter_state(3);
 
 % U = pwm1 pwm2 pwm3 pwm4
 % quadcopter constants
-d= 0.032;
-c_t =  0.0153; %N per pwm(0-1)
+d= 0.032; % meter
+c_t =  9.8*0.0153; %N per pwm(0-1)
 c_a =  0.6726e-03;% N/m per pwm (0-1)
 
 
 %rpm to torque matrix "mixing matrix". 
-M = [   d*c_t d*c_t -d*c_t -d*c_t;
-        -d*c_t d*c_t d*c_t -d*c_t;
-        c_a -c_a c_a -c_a];
+M = [   -d*c_t   -d*c_t   d*c_t  d*c_t;
+        -d*c_t  d*c_t   d*c_t   -d*c_t;
+        -c_a     c_a    -c_a     c_a];
     
 F = [zeros(2,4); c_t c_t c_t c_t];
 
 I = [   0.5119e-6 0 0; 
         0 0.5160e-6 0;
         0 0 0.5897e-6];
-mass = 0.022; 
+mass = 0.027; 
         
 %torque_3 = M * [omega_m1^2; omega_m2^2; omega_m3^2; omega_m4^2]; 
 

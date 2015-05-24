@@ -16,7 +16,7 @@ collided = false;
 %epsilon = 0.0001;
 
 fps = 30; % how often to plot 
-slowmo = 10; % percentage of full playback speed
+slowmo = 20; % percentage of full playback speed
 showPlot = true;
 % recordResults = false;
 
