@@ -7,7 +7,7 @@ clf
 
 %-------simulator settings-----------
 maxSteps = 10000;
-frequency= 300; %hz
+frequency= 500; %hz
 
 dt =1/frequency;
 
