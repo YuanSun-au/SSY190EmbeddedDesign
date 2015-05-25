@@ -693,19 +693,40 @@ static uint16_t limitThrust(int32_t value)
 
 // Update the control signal with LQR gain (Called from stabilizerTask)
 void updateControlSignal(void){
-    
+#define PI 3.14159265359
+	float rollRad = (PI/180)*eulerRollActual;
+	float pitchRad = (PI/180)*eulerPitchActual;
+	float yawRad = (PI/180)*eulerYawActual;
+
+	float goalRollRad = (PI/180)*eulerRollDesired;
+	float goalPitchRad = (PI/180)*eulerPitchDesired;
+	float goalYawlRad = (PI/180)*eulerPitchDesired;
+	//find the T matrix
+	float T[3][3] = { {1, 0, -sin(eulerPitchActual)},
+			{0, cos(eulerRollActual), cos(eulerPitchActual)*sin(eulerRollActual)},
+			{0, -sin(eulerRollActual), cos(eulerPitchActual)*cos(eulerRollActual)}};
+
+	//get omega in radians
+	float omegaRad[3] = {(PI/180)*gyro.x,(PI/180)*gyro.y,(PI/180)*gyro.z};
+
+	//find dropiya from dropiya = T\omega
+	float temp = (T[0][0]*T[1][1]*T[2][2]+T[0][1]*T[2][0]*T[1][2]+T[0][2]*T[1][0]*T[2][1])-(T[0][0]*T[1][2]*T[2][1]+T[0][1]*T[1][0]*T[2][2]+T[0][2]*T[1][1]*T[2][0]);
+	float dRoll = -((T[0][1]*T[2][2]*omegaRad[1]+T[0][2]*T[1][1]*omegaRad[2]+omegaRad[0]*T[1][2]*T[2][1])-(T[0][1]*T[1][2]*omegaRad[2]+T[0][2]*T[2][1]*omegaRad[1]+omegaRad[0]*T[1][1]*T[2][2]))/temp;
+	float dPitch = -((T[0][0]*T[1][2]*omegaRad[2]+T[0][2]*T[2][0]*omegaRad[1]+omegaRad[0]*T[1][0]*T[2][2])-(T[0][0]*T[2][2]*omegaRad[1]+T[0][2]*T[1][0]*omegaRad[2]+omegaRad[0]*T[1][2]*T[2][0]))/temp;
+	float dYaw = -((T[0][0]*T[2][1]*omegaRad[1]+T[0][1]*T[1][0]*omegaRad[2]+omegaRad[0]*T[1][1]*T[2][0])-(T[0][0]*T[1][1]*omegaRad[2]+T[0][1]*T[2][0]*omegaRad[1]+omegaRad[0]*T[1][0]*T[2][1]))/temp;
+
+    float y[8] = {goalRollRad - rollRad, goalPitchRad - pitchRad, -yawRad, -dRoll, -dPitch, goalYawlRad - dYaw, -posZ, thrustDesired-velZ};
+
     int i,j;
-    
-    float y[8] = {(3.14/180)*eulerRollActual, (3.14/180)*eulerPitchActual, (3.14/180)*eulerYawActual, (3.14/180)*gyro.x, (3.14/180)*gyro.y, (3.14/180)*gyro.z, posZ, velZ};
-    
     /* Multiplying matrix a and b and storing in array mult. */
     for(i=0; i< 4; ++i){
         float temp = 0;/* Initializing elements of matrix mult to 0.*/
         for(j=0; j<8 ; ++j){ // Rows
             temp+=K[i][j]*y[j];
         }
-        r[i]=temp;
+        r[i]=temp + 0.52; //adding hover pwm
     }
+
 }
 
 static void stabilizerTask(void* param){
