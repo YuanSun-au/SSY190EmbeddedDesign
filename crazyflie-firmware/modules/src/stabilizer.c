@@ -547,6 +547,7 @@ static float eulerYawDesired;
 static float rollRateDesired;
 static float pitchRateDesired;
 static float yawRateDesired;
+static float velZgoal;
 
 // Baro variables
 static float temperature; // temp from barometer
@@ -577,60 +578,22 @@ uint32_t motorPowerM2;
 uint32_t motorPowerM3;
 uint32_t motorPowerM4;
 
-// Not used at the moment!!
-////////////////////////////////////////
+// Old stuffs
 /*
- // Initialize the Kr matrix
- 
- static float Kr[4][8] = {
- {1666441.80442853, -1679786.34804454, 73711.8622141450, -833219614.601239, 839893184.483136, -36856102.5762756, 2291801557.65930, -1145900778829.65},
- {1666441.80442648, 1679786.38988786, -73712.5480879171, -833219614.601238, -839893184.483054, 36856102.5749039, 2291801557.65930, -1145900778829.65},
- { -1666436.65400078, 1679786.38988783, 73711.8622140798, 833219614.611538, -839893184.483054, -36856102.5762756, 2291801557.65930, -1145900778829.65},
- { -1666436.65399870, -1679786.34804458, -73712.5480885769, 833219614.611538, 839893184.483136, 36856102.5749038, 2291801557.65930, -1145900778829.65}
- };
- */
-
-// Initialize the K matrix
-/*
- static float K[4][8] = {
-	{0, 0, 0, -7.30524939275438e-37, 2.82955664549963e-36, 2.42267293103331e-36, 0, -3.45043029107532e-48},
-	{0, 0, 0, -7.30524939275438e-37, 2.82955664549963e-36, 2.42267293103331e-36, 0, -3.45043029107532e-48},
-	{0, 0, 0, 7.30524939275438e-37, -2.82955664549963e-36, -2.42267293103331e-36, 0, 3.45043029107532e-48},
-	{0, 0, 0, 7.30524939275438e-37, -2.82955664549963e-36, -2.42267293103331e-36, 0, 3.45043029107532e-48}
- };
- */
-////////////////////////////////////////
-/*
- static float Kr[4][8] = {
- {-3.12649415577285e-07, 7.04412946823569e-07,	-5.49477319839945e-08,	9.39619046816472e-08,	9.72624367104630e-08,   5.22700585917623e-05,	0.0219723371091620,	-21.9723371091620},
- {-3.12649415571729e-07,	7.04606062529460e-07,	4.95923918757397e-08,	9.39619046976112e-08,	-9.58532612030834e-08,	-5.22700652679916e-05,	0.0219723371091621,	-21.9723371091621},
- {-3.12460866695466e-07,	7.04606062521510e-07,	-5.49477319840101e-08,	-9.45869771365766e-08,	-9.58532612307596e-08,	5.22700585917779e-05,	0.0219723371091620,	-21.9723371091620},
- {-3.12460866689907e-07,	7.04412946831514e-07,	4.95923918757565e-08,	-9.45869771246517e-08,	9.72624367426037e-08,	-5.22700652680085e-05,	0.0219723371091621,	-21.9723371091621}
- };
- */
-
 static float K[4][8] = {
     {-0.0420390966593963,    -0.0423757987804794,	-0.345306369907288,	 -0.0133780084142088,     -0.0134851563916171,	-0.109886405272128,	0.494003712736536,	0.537138523654095},
     {-0.0420390966594088,	0.0423757987933134,  	0.345306369906335,	 -0.0133780084142088,     0.0134851563917864,	0.109886405270806,	0.494003712736537,	0.537138523654093},
     {0.0420390966761430, 	0.0423757987923129,  	-0.345306369907174,   0.0133780084142634,	  0.0134851563917854,	-0.109886405272127,	0.494003712736545,	0.537138523654096},
     {0.0420390966762987, 	-0.0423757987796651, 	0.345306369906239,    0.0133780084142635,	  -0.0134851563916162,	0.109886405270806,	0.494003712736537,	0.537138523654093}
 };
+*/
 
-/*
- static float K[4][8] = {
- {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
- {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
- {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2},
- {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2}
- };
- 
- static float K[4][8] = {
- {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
- {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
- {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2},
- {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2}
- };
- */
+static float K[4][8] = {
+    {-2.43708471149600,	-2.45660426508723,	-1.08941862403029e-05,	-0.0157731449865403,	-0.0158994782389946,	-0.109593394450376,	0.482595182319267,	1.54027012185378},
+    {-2.43708471147221,	2.45660423894574,	1.10253165036707e-05,	-0.0157731449865166,	0.0158994780766410,     0.109593365395343,	0.482595182319271,	1.54027012185380},
+    {2.43708475964789,	2.45660423896934,	-1.08940993711986e-05,	0.0157731453321723,     0.0158994780766644,     -0.109593394450293,	0.482595182319261,	1.54027012185379},
+    {2.43708475962417,	-2.45660426506360,	1.10252631390818e-05,	0.0157731453321487,     -0.0158994782389711,	0.109593365395285,	0.482595182319260,	1.54027012185377}
+};
 
 float r[4];
 
@@ -700,11 +663,11 @@ void updateControlSignal(void){
 
 	float goalRollRad = (PI/180)*eulerRollDesired;
 	float goalPitchRad = (PI/180)*eulerPitchDesired;
-	float goalYawlRad = (PI/180)*eulerPitchDesired;
+	float goalYawRad = (PI/180)*eulerYawDesired;
 	//find the T matrix
-	float T[3][3] = { {1, 0, -sin(eulerPitchActual)},
-			{0, cos(eulerRollActual), cos(eulerPitchActual)*sin(eulerRollActual)},
-			{0, -sin(eulerRollActual), cos(eulerPitchActual)*cos(eulerRollActual)}};
+	float T[3][3] = { {1, 0, -sin(pitchRad)},
+			{0, cos(rollRad), cos(pitchRad)*sin(rollRad)},
+			{0, -sin(rollRad), cos(pitchRad)*cos(rollRad)}};
 
 	//get omega in radians
 	float omegaRad[3] = {(PI/180)*gyro.x,(PI/180)*gyro.y,(PI/180)*gyro.z};
@@ -715,16 +678,16 @@ void updateControlSignal(void){
 	float dPitch = -((T[0][0]*T[1][2]*omegaRad[2]+T[0][2]*T[2][0]*omegaRad[1]+omegaRad[0]*T[1][0]*T[2][2])-(T[0][0]*T[2][2]*omegaRad[1]+T[0][2]*T[1][0]*omegaRad[2]+omegaRad[0]*T[1][2]*T[2][0]))/temp;
 	float dYaw = -((T[0][0]*T[2][1]*omegaRad[1]+T[0][1]*T[1][0]*omegaRad[2]+omegaRad[0]*T[1][1]*T[2][0])-(T[0][0]*T[1][1]*omegaRad[2]+T[0][1]*T[2][0]*omegaRad[1]+omegaRad[0]*T[1][0]*T[2][1]))/temp;
 
-    float y[8] = {goalRollRad - rollRad, goalPitchRad - pitchRad, -yawRad, -dRoll, -dPitch, goalYawlRad - dYaw, -posZ, thrustDesired-velZ};
+    float y[8] = {goalRollRad - rollRad, goalPitchRad - pitchRad, -yawRad, -dRoll, -dPitch, goalYawRad - dYaw, -posZ, 100*velZgoal - velZ};
 
     int i,j;
     /* Multiplying matrix a and b and storing in array mult. */
     for(i=0; i< 4; ++i){
-        float temp = 0;/* Initializing elements of matrix mult to 0.*/
+        float temp2 = 0;/* Initializing elements of matrix mult to 0.*/
         for(j=0; j<8 ; ++j){ // Rows
-            temp+=K[i][j]*y[j];
+            temp2-=K[i][j]*y[j];
         }
-        r[i]=temp + 0.52; //adding hover pwm
+        r[i]=temp2; //+ 0.52; //adding hover pwm
     }
 
 }
@@ -753,17 +716,20 @@ static void stabilizerTask(void* param){
             sensfusion6GetEulerRPY(&eulerRollActual, &eulerPitchActual, &eulerYawActual);
             accWZ = sensfusion6GetAccZWithoutGravity(acc.x, acc.y, acc.z);
             
-            velZ += accWZ*FUSION_UPDATE_DT;
+            velZ += (9.82*accWZ*FUSION_UPDATE_DT)/(1000);
             posZ += posZ*FUSION_UPDATE_DT;
             
             //input: gyro.x, -gyro.y, gyro.z
             commanderGetThrust(&thrustDesired);
+            velZgoal = 3*thrustDesired/(float)60000;
             
             // Update control signal
             
             updateControlSignal();
             
             if (thrustDesired > 0.1){
+                velZ = 0;
+                posZ = 0;
                 //write output to motors directly, m1 m2 m3 and m4 must be set
                 motorsSetRatio(MOTOR_M1, limitThrust((uint32_t) UINT16_MAX*r[3])); //motors are between 0 and UINT16_MAX
                 motorsSetRatio(MOTOR_M2, limitThrust((uint32_t) UINT16_MAX*r[2]));
@@ -771,6 +737,8 @@ static void stabilizerTask(void* param){
                 motorsSetRatio(MOTOR_M4, limitThrust((uint32_t) UINT16_MAX*r[0]));
                 
             }else{
+                velZ = 0;
+                posZ = 0;
                 motorsSetRatio(MOTOR_M1, 0); //motors are between 0 and UINT16_MAX
                 motorsSetRatio(MOTOR_M2, 0);
                 motorsSetRatio(MOTOR_M3, 0);
