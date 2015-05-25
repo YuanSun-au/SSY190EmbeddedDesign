@@ -5,7 +5,7 @@
 
 
 /**
-
+ 
  *    ||          ____  _ __
  * +------+      / __ )(_) /_______________ _____  ___
  * | 0xBC |     / __  / / __/ ___/ ___/ __ `/_  / / _ \
@@ -151,277 +151,277 @@ static float deadband(float value, const float threshold);
 
 void stabilizerInit(void)
 {
-  if(isInit)
-    return;
-
-  motorsInit();
-  imu6Init();
-  sensfusion6Init();
-  controllerInit();
-
-  rollRateDesired = 0;
-  pitchRateDesired = 0;
-  yawRateDesired = 0;
-
-  xTaskCreate(stabilizerTask, (const signed char * const)STABILIZER_TASK_NAME,
-              STABILIZER_TASK_STACKSIZE, NULL, STABILIZER_TASK_PRI, NULL);
-
-  isInit = true;
+    if(isInit)
+        return;
+    
+    motorsInit();
+    imu6Init();
+    sensfusion6Init();
+    controllerInit();
+    
+    rollRateDesired = 0;
+    pitchRateDesired = 0;
+    yawRateDesired = 0;
+    
+    xTaskCreate(stabilizerTask, (const signed char * const)STABILIZER_TASK_NAME,
+                STABILIZER_TASK_STACKSIZE, NULL, STABILIZER_TASK_PRI, NULL);
+    
+    isInit = true;
 }
 
 bool stabilizerTest(void)
 {
-  bool pass = true;
-
-  pass &= motorsTest();
-  pass &= imu6Test();
-  pass &= sensfusion6Test();
-  pass &= controllerTest();
-
-  return pass;
+    bool pass = true;
+    
+    pass &= motorsTest();
+    pass &= imu6Test();
+    pass &= sensfusion6Test();
+    pass &= controllerTest();
+    
+    return pass;
 }
 
 static void stabilizerTask(void* param)
 {
-  uint32_t attitudeCounter = 0;
-  uint32_t altHoldCounter = 0;
-  uint32_t lastWakeTime;
-
-  vTaskSetApplicationTaskTag(0, (void*)TASK_STABILIZER_ID_NBR);
-
-  //Wait for the system to be fully started to start stabilization loop
-  systemWaitStart();
-
-  lastWakeTime = xTaskGetTickCount ();
-
-  while(1)
-  {
-    vTaskDelayUntil(&lastWakeTime, F2T(IMU_UPDATE_FREQ)); // 500Hz
-
-    // Magnetometer not yet used more then for logging.
-    imu9Read(&gyro, &acc, &mag);
-
-    if (imu6IsCalibrated())
+    uint32_t attitudeCounter = 0;
+    uint32_t altHoldCounter = 0;
+    uint32_t lastWakeTime;
+    
+    vTaskSetApplicationTaskTag(0, (void*)TASK_STABILIZER_ID_NBR);
+    
+    //Wait for the system to be fully started to start stabilization loop
+    systemWaitStart();
+    
+    lastWakeTime = xTaskGetTickCount ();
+    
+    while(1)
     {
-      commanderGetRPY(&eulerRollDesired, &eulerPitchDesired, &eulerYawDesired);
-      commanderGetRPYType(&rollType, &pitchType, &yawType);
-
-      // 250HZ
-      if (++attitudeCounter >= ATTITUDE_UPDATE_RATE_DIVIDER)
-      {
-        sensfusion6UpdateQ(gyro.x, gyro.y, gyro.z, acc.x, acc.y, acc.z, FUSION_UPDATE_DT);
-        sensfusion6GetEulerRPY(&eulerRollActual, &eulerPitchActual, &eulerYawActual);
-
-        accWZ = sensfusion6GetAccZWithoutGravity(acc.x, acc.y, acc.z);
-        accMAG = (acc.x*acc.x) + (acc.y*acc.y) + (acc.z*acc.z);
-        // Estimate speed from acc (drifts)
-        vSpeed += deadband(accWZ, vAccDeadband) * FUSION_UPDATE_DT;
-
-        controllerCorrectAttitudePID(eulerRollActual, eulerPitchActual, eulerYawActual,
-                                     eulerRollDesired, eulerPitchDesired, -eulerYawDesired,
-                                     &rollRateDesired, &pitchRateDesired, &yawRateDesired);
-        attitudeCounter = 0;
-      }
-
-      // 100HZ
-      if (imuHasBarometer() && (++altHoldCounter >= ALTHOLD_UPDATE_RATE_DIVIDER))
-      {
-        stabilizerAltHoldUpdate();
-        altHoldCounter = 0;
-      }
-
-      if (rollType == RATE)
-      {
-        rollRateDesired = eulerRollDesired;
-      }
-      if (pitchType == RATE)
-      {
-        pitchRateDesired = eulerPitchDesired;
-      }
-      if (yawType == RATE)
-      {
-        yawRateDesired = -eulerYawDesired;
-      }
-
-      // TODO: Investigate possibility to subtract gyro drift.
-      controllerCorrectRatePID(gyro.x, -gyro.y, gyro.z,
-                               rollRateDesired, pitchRateDesired, yawRateDesired);
-
-      controllerGetActuatorOutput(&actuatorRoll, &actuatorPitch, &actuatorYaw);
-
-      if (!altHold || !imuHasBarometer())
-      {
-        // Use thrust from controller if not in altitude hold mode
-        commanderGetThrust(&actuatorThrust);
-      }
-      else
-      {
-        // Added so thrust can be set to 0 while in altitude hold mode after disconnect
-        commanderWatchdog();
-      }
-
-      if (actuatorThrust > 0)
-      {
+        vTaskDelayUntil(&lastWakeTime, F2T(IMU_UPDATE_FREQ)); // 500Hz
+        
+        // Magnetometer not yet used more then for logging.
+        imu9Read(&gyro, &acc, &mag);
+        
+        if (imu6IsCalibrated())
+        {
+            commanderGetRPY(&eulerRollDesired, &eulerPitchDesired, &eulerYawDesired);
+            commanderGetRPYType(&rollType, &pitchType, &yawType);
+            
+            // 250HZ
+            if (++attitudeCounter >= ATTITUDE_UPDATE_RATE_DIVIDER)
+            {
+                sensfusion6UpdateQ(gyro.x, gyro.y, gyro.z, acc.x, acc.y, acc.z, FUSION_UPDATE_DT);
+                sensfusion6GetEulerRPY(&eulerRollActual, &eulerPitchActual, &eulerYawActual);
+                
+                accWZ = sensfusion6GetAccZWithoutGravity(acc.x, acc.y, acc.z);
+                accMAG = (acc.x*acc.x) + (acc.y*acc.y) + (acc.z*acc.z);
+                // Estimate speed from acc (drifts)
+                vSpeed += deadband(accWZ, vAccDeadband) * FUSION_UPDATE_DT;
+                
+                controllerCorrectAttitudePID(eulerRollActual, eulerPitchActual, eulerYawActual,
+                                             eulerRollDesired, eulerPitchDesired, -eulerYawDesired,
+                                             &rollRateDesired, &pitchRateDesired, &yawRateDesired);
+                attitudeCounter = 0;
+            }
+            
+            // 100HZ
+            if (imuHasBarometer() && (++altHoldCounter >= ALTHOLD_UPDATE_RATE_DIVIDER))
+            {
+                stabilizerAltHoldUpdate();
+                altHoldCounter = 0;
+            }
+            
+            if (rollType == RATE)
+            {
+                rollRateDesired = eulerRollDesired;
+            }
+            if (pitchType == RATE)
+            {
+                pitchRateDesired = eulerPitchDesired;
+            }
+            if (yawType == RATE)
+            {
+                yawRateDesired = -eulerYawDesired;
+            }
+            
+            // TODO: Investigate possibility to subtract gyro drift.
+            controllerCorrectRatePID(gyro.x, -gyro.y, gyro.z,
+                                     rollRateDesired, pitchRateDesired, yawRateDesired);
+            
+            controllerGetActuatorOutput(&actuatorRoll, &actuatorPitch, &actuatorYaw);
+            
+            if (!altHold || !imuHasBarometer())
+            {
+                // Use thrust from controller if not in altitude hold mode
+                commanderGetThrust(&actuatorThrust);
+            }
+            else
+            {
+                // Added so thrust can be set to 0 while in altitude hold mode after disconnect
+                commanderWatchdog();
+            }
+            
+            if (actuatorThrust > 0)
+            {
 #if defined(TUNE_ROLL)
-        distributePower(actuatorThrust, actuatorRoll, 0, 0);
+                distributePower(actuatorThrust, actuatorRoll, 0, 0);
 #elif defined(TUNE_PITCH)
-        distributePower(actuatorThrust, 0, actuatorPitch, 0);
+                distributePower(actuatorThrust, 0, actuatorPitch, 0);
 #elif defined(TUNE_YAW)
-        distributePower(actuatorThrust, 0, 0, -actuatorYaw);
+                distributePower(actuatorThrust, 0, 0, -actuatorYaw);
 #else
-        distributePower(actuatorThrust, actuatorRoll, actuatorPitch, -actuatorYaw);
+                distributePower(actuatorThrust, actuatorRoll, actuatorPitch, -actuatorYaw);
 #endif
-      }
-      else
-      {
-        distributePower(0, 0, 0, 0);
-        controllerResetAllPID();
-      }
+            }
+            else
+            {
+                distributePower(0, 0, 0, 0);
+                controllerResetAllPID();
+            }
+        }
     }
-  }
 }
 
 static void stabilizerAltHoldUpdate(void)
 {
-  // Get altitude hold commands from pilot
-  commanderGetAltHold(&altHold, &setAltHold, &altHoldChange);
-
-  // Get barometer height estimates
-  //TODO do the smoothing within getData
-  lps25hGetData(&pressure, &temperature, &aslRaw);
-
-  asl = asl * aslAlpha + aslRaw * (1 - aslAlpha);
-  aslLong = aslLong * aslAlphaLong + aslRaw * (1 - aslAlphaLong);
-
-  // Estimate vertical speed based on successive barometer readings. This is ugly :)
-  vSpeedASL = deadband(asl - aslLong, vSpeedASLDeadband);
-
-  // Estimate vertical speed based on Acc - fused with baro to reduce drift
-  vSpeed = constrain(vSpeed, -vSpeedLimit, vSpeedLimit);
-  vSpeed = vSpeed * vBiasAlpha + vSpeedASL * (1.f - vBiasAlpha);
-  vSpeedAcc = vSpeed;
-
-  // Reset Integral gain of PID controller if being charged
-  if (!pmIsDischarging())
-  {
-    altHoldPID.integ = 0.0;
-  }
-
-  // Altitude hold mode just activated, set target altitude as current altitude. Reuse previous integral term as a starting point
-  if (setAltHold)
-  {
-    // Set to current altitude
-    altHoldTarget = asl;
-
-    // Cache last integral term for reuse after pid init
-    const float pre_integral = altHoldPID.integ;
-
-    // Reset PID controller
-    pidInit(&altHoldPID, asl, altHoldKp, altHoldKi, altHoldKd,
-            ALTHOLD_UPDATE_DT);
-    // TODO set low and high limits depending on voltage
-    // TODO for now just use previous I value and manually set limits for whole voltage range
-    //                    pidSetIntegralLimit(&altHoldPID, 12345);
-    //                    pidSetIntegralLimitLow(&altHoldPID, 12345);              /
-
-    altHoldPID.integ = pre_integral;
-
-    // Reset altHoldPID
-    altHoldPIDVal = pidUpdate(&altHoldPID, asl, false);
-  }
-
-  // In altitude hold mode
-  if (altHold)
-  {
-    // Update target altitude from joy controller input
-    altHoldTarget += altHoldChange / altHoldChange_SENS;
-    pidSetDesired(&altHoldPID, altHoldTarget);
-
-    // Compute error (current - target), limit the error
-    altHoldErr = constrain(deadband(asl - altHoldTarget, errDeadband),
-                           -altHoldErrMax, altHoldErrMax);
-    pidSetError(&altHoldPID, -altHoldErr);
-
-    // Get control from PID controller, dont update the error (done above)
-    // Smooth it and include barometer vspeed
-    // TODO same as smoothing the error??
-    altHoldPIDVal = (pidAlpha) * altHoldPIDVal + (1.f - pidAlpha) * ((vSpeedAcc * vSpeedAccFac) +
-                    (vSpeedASL * vSpeedASLFac) + pidUpdate(&altHoldPID, asl, false));
-
-    // compute new thrust
-    actuatorThrust =  max(altHoldMinThrust, min(altHoldMaxThrust,
-                          limitThrust( altHoldBaseThrust + (int32_t)(altHoldPIDVal*pidAslFac))));
-
-    // i part should compensate for voltage drop
-
-  }
-  else
-  {
-    altHoldTarget = 0.0;
-    altHoldErr = 0.0;
-    altHoldPIDVal = 0.0;
-  }
+    // Get altitude hold commands from pilot
+    commanderGetAltHold(&altHold, &setAltHold, &altHoldChange);
+    
+    // Get barometer height estimates
+    //TODO do the smoothing within getData
+    lps25hGetData(&pressure, &temperature, &aslRaw);
+    
+    asl = asl * aslAlpha + aslRaw * (1 - aslAlpha);
+    aslLong = aslLong * aslAlphaLong + aslRaw * (1 - aslAlphaLong);
+    
+    // Estimate vertical speed based on successive barometer readings. This is ugly :)
+    vSpeedASL = deadband(asl - aslLong, vSpeedASLDeadband);
+    
+    // Estimate vertical speed based on Acc - fused with baro to reduce drift
+    vSpeed = constrain(vSpeed, -vSpeedLimit, vSpeedLimit);
+    vSpeed = vSpeed * vBiasAlpha + vSpeedASL * (1.f - vBiasAlpha);
+    vSpeedAcc = vSpeed;
+    
+    // Reset Integral gain of PID controller if being charged
+    if (!pmIsDischarging())
+    {
+        altHoldPID.integ = 0.0;
+    }
+    
+    // Altitude hold mode just activated, set target altitude as current altitude. Reuse previous integral term as a starting point
+    if (setAltHold)
+    {
+        // Set to current altitude
+        altHoldTarget = asl;
+        
+        // Cache last integral term for reuse after pid init
+        const float pre_integral = altHoldPID.integ;
+        
+        // Reset PID controller
+        pidInit(&altHoldPID, asl, altHoldKp, altHoldKi, altHoldKd,
+                ALTHOLD_UPDATE_DT);
+        // TODO set low and high limits depending on voltage
+        // TODO for now just use previous I value and manually set limits for whole voltage range
+        //                    pidSetIntegralLimit(&altHoldPID, 12345);
+        //                    pidSetIntegralLimitLow(&altHoldPID, 12345);              /
+        
+        altHoldPID.integ = pre_integral;
+        
+        // Reset altHoldPID
+        altHoldPIDVal = pidUpdate(&altHoldPID, asl, false);
+    }
+    
+    // In altitude hold mode
+    if (altHold)
+    {
+        // Update target altitude from joy controller input
+        altHoldTarget += altHoldChange / altHoldChange_SENS;
+        pidSetDesired(&altHoldPID, altHoldTarget);
+        
+        // Compute error (current - target), limit the error
+        altHoldErr = constrain(deadband(asl - altHoldTarget, errDeadband),
+                               -altHoldErrMax, altHoldErrMax);
+        pidSetError(&altHoldPID, -altHoldErr);
+        
+        // Get control from PID controller, dont update the error (done above)
+        // Smooth it and include barometer vspeed
+        // TODO same as smoothing the error??
+        altHoldPIDVal = (pidAlpha) * altHoldPIDVal + (1.f - pidAlpha) * ((vSpeedAcc * vSpeedAccFac) +
+                                                                         (vSpeedASL * vSpeedASLFac) + pidUpdate(&altHoldPID, asl, false));
+        
+        // compute new thrust
+        actuatorThrust =  max(altHoldMinThrust, min(altHoldMaxThrust,
+                                                    limitThrust( altHoldBaseThrust + (int32_t)(altHoldPIDVal*pidAslFac))));
+        
+        // i part should compensate for voltage drop
+        
+    }
+    else
+    {
+        altHoldTarget = 0.0;
+        altHoldErr = 0.0;
+        altHoldPIDVal = 0.0;
+    }
 }
 
 static void distributePower(const uint16_t thrust, const int16_t roll,
                             const int16_t pitch, const int16_t yaw)
 {
 #ifdef QUAD_FORMATION_X
-  int16_t r = roll >> 1;
-  int16_t p = pitch >> 1;
-  motorPowerM1 = limitThrust(thrust - r + p + yaw);
-  motorPowerM2 = limitThrust(thrust - r - p - yaw);
-  motorPowerM3 =  limitThrust(thrust + r - p + yaw);
-  motorPowerM4 =  limitThrust(thrust + r + p - yaw);
+    int16_t r = roll >> 1;
+    int16_t p = pitch >> 1;
+    motorPowerM1 = limitThrust(thrust - r + p + yaw);
+    motorPowerM2 = limitThrust(thrust - r - p - yaw);
+    motorPowerM3 =  limitThrust(thrust + r - p + yaw);
+    motorPowerM4 =  limitThrust(thrust + r + p - yaw);
 #else // QUAD_FORMATION_NORMAL
-  motorPowerM1 = limitThrust(thrust + pitch + yaw);
-  motorPowerM2 = limitThrust(thrust - roll - yaw);
-  motorPowerM3 =  limitThrust(thrust - pitch + yaw);
-  motorPowerM4 =  limitThrust(thrust + roll - yaw);
+    motorPowerM1 = limitThrust(thrust + pitch + yaw);
+    motorPowerM2 = limitThrust(thrust - roll - yaw);
+    motorPowerM3 =  limitThrust(thrust - pitch + yaw);
+    motorPowerM4 =  limitThrust(thrust + roll - yaw);
 #endif
-
-  motorsSetRatio(MOTOR_M1, motorPowerM1);
-  motorsSetRatio(MOTOR_M2, motorPowerM2);
-  motorsSetRatio(MOTOR_M3, motorPowerM3);
-  motorsSetRatio(MOTOR_M4, motorPowerM4);
+    
+    motorsSetRatio(MOTOR_M1, motorPowerM1);
+    motorsSetRatio(MOTOR_M2, motorPowerM2);
+    motorsSetRatio(MOTOR_M3, motorPowerM3);
+    motorsSetRatio(MOTOR_M4, motorPowerM4);
 }
 
 static uint16_t limitThrust(int32_t value)
 {
-  if(value > UINT16_MAX)
-  {
-    value = UINT16_MAX;
-  }
-  else if(value < 0)
-  {
-    value = 0;
-  }
-
-  return (uint16_t)value;
+    if(value > UINT16_MAX)
+    {
+        value = UINT16_MAX;
+    }
+    else if(value < 0)
+    {
+        value = 0;
+    }
+    
+    return (uint16_t)value;
 }
 
 // Constrain value between min and max
 static float constrain(float value, const float minVal, const float maxVal)
 {
-  return min(maxVal, max(minVal,value));
+    return min(maxVal, max(minVal,value));
 }
 
 // Deadzone
 static float deadband(float value, const float threshold)
 {
-  if (fabs(value) < threshold)
-  {
-    value = 0;
-  }
-  else if (value > 0)
-  {
-    value -= threshold;
-  }
-  else if (value < 0)
-  {
-    value += threshold;
-  }
-  return value;
+    if (fabs(value) < threshold)
+    {
+        value = 0;
+    }
+    else if (value > 0)
+    {
+        value -= threshold;
+    }
+    else if (value < 0)
+    {
+        value += threshold;
+    }
+    return value;
 }
 
 LOG_GROUP_START(stabilizer)
@@ -580,15 +580,15 @@ uint32_t motorPowerM4;
 // Not used at the moment!!
 ////////////////////////////////////////
 /*
-// Initialize the Kr matrix
-
-static float Kr[4][8] = {
-    {1666441.80442853, -1679786.34804454, 73711.8622141450, -833219614.601239, 839893184.483136, -36856102.5762756, 2291801557.65930, -1145900778829.65},
-    {1666441.80442648, 1679786.38988786, -73712.5480879171, -833219614.601238, -839893184.483054, 36856102.5749039, 2291801557.65930, -1145900778829.65},
-    { -1666436.65400078, 1679786.38988783, 73711.8622140798, 833219614.611538, -839893184.483054, -36856102.5762756, 2291801557.65930, -1145900778829.65},
-    { -1666436.65399870, -1679786.34804458, -73712.5480885769, 833219614.611538, 839893184.483136, 36856102.5749038, 2291801557.65930, -1145900778829.65}
-};
-*/
+ // Initialize the Kr matrix
+ 
+ static float Kr[4][8] = {
+ {1666441.80442853, -1679786.34804454, 73711.8622141450, -833219614.601239, 839893184.483136, -36856102.5762756, 2291801557.65930, -1145900778829.65},
+ {1666441.80442648, 1679786.38988786, -73712.5480879171, -833219614.601238, -839893184.483054, 36856102.5749039, 2291801557.65930, -1145900778829.65},
+ { -1666436.65400078, 1679786.38988783, 73711.8622140798, 833219614.611538, -839893184.483054, -36856102.5762756, 2291801557.65930, -1145900778829.65},
+ { -1666436.65399870, -1679786.34804458, -73712.5480885769, 833219614.611538, 839893184.483136, 36856102.5749038, 2291801557.65930, -1145900778829.65}
+ };
+ */
 
 // Initialize the K matrix
 /*
@@ -600,13 +600,37 @@ static float Kr[4][8] = {
  };
  */
 ////////////////////////////////////////
+/*
+ static float Kr[4][8] = {
+ {-3.12649415577285e-07, 7.04412946823569e-07,	-5.49477319839945e-08,	9.39619046816472e-08,	9.72624367104630e-08,   5.22700585917623e-05,	0.0219723371091620,	-21.9723371091620},
+ {-3.12649415571729e-07,	7.04606062529460e-07,	4.95923918757397e-08,	9.39619046976112e-08,	-9.58532612030834e-08,	-5.22700652679916e-05,	0.0219723371091621,	-21.9723371091621},
+ {-3.12460866695466e-07,	7.04606062521510e-07,	-5.49477319840101e-08,	-9.45869771365766e-08,	-9.58532612307596e-08,	5.22700585917779e-05,	0.0219723371091620,	-21.9723371091620},
+ {-3.12460866689907e-07,	7.04412946831514e-07,	4.95923918757565e-08,	-9.45869771246517e-08,	9.72624367426037e-08,	-5.22700652680085e-05,	0.0219723371091621,	-21.9723371091621}
+ };
+ */
 
 static float K[4][8] = {
-    {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
-    {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
-    {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2},
-    {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2}
+    {-0.0420390966593963,    -0.0423757987804794,	-0.345306369907288,	 -0.0133780084142088,     -0.0134851563916171,	-0.109886405272128,	0.494003712736536,	0.537138523654095},
+    {-0.0420390966594088,	0.0423757987933134,  	0.345306369906335,	 -0.0133780084142088,     0.0134851563917864,	0.109886405270806,	0.494003712736537,	0.537138523654093},
+    {0.0420390966761430, 	0.0423757987923129,  	-0.345306369907174,   0.0133780084142634,	  0.0134851563917854,	-0.109886405272127,	0.494003712736545,	0.537138523654096},
+    {0.0420390966762987, 	-0.0423757987796651, 	0.345306369906239,    0.0133780084142635,	  -0.0134851563916162,	0.109886405270806,	0.494003712736537,	0.537138523654093}
 };
+
+/*
+ static float K[4][8] = {
+ {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
+ {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
+ {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2},
+ {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2}
+ };
+ 
+ static float K[4][8] = {
+ {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
+ {0, 0, 0, -7.30524939275438e2, 2.82955664549963e2, 2.42267293103331e2, 0, -3.45043029107532e2},
+ {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2},
+ {0, 0, 0, 7.30524939275438e2, -2.82955664549963e2, -2.42267293103331e2, 0, 3.45043029107532e2}
+ };
+ */
 
 float r[4];
 
@@ -623,48 +647,48 @@ static bool isInit;
 
 void stabilizerInit(void)
 {
-  if(isInit)
-    return;
-
-  motorsInit();
-  imu6Init();
-  sensfusion6Init();
-  controllerInit();
-
-  rollRateDesired = 0;
-  pitchRateDesired = 0;
-  yawRateDesired = 0;
-
-  xTaskCreate(stabilizerTask, (const signed char * const)STABILIZER_TASK_NAME,
-              STABILIZER_TASK_STACKSIZE, NULL, STABILIZER_TASK_PRI, NULL);
-
-  isInit = true;
+    if(isInit)
+        return;
+    
+    motorsInit();
+    imu6Init();
+    sensfusion6Init();
+    controllerInit();
+    
+    rollRateDesired = 0;
+    pitchRateDesired = 0;
+    yawRateDesired = 0;
+    
+    xTaskCreate(stabilizerTask, (const signed char * const)STABILIZER_TASK_NAME,
+                STABILIZER_TASK_STACKSIZE, NULL, STABILIZER_TASK_PRI, NULL);
+    
+    isInit = true;
 }
 
 bool stabilizerTest(void)
 {
-  bool pass = true;
-
-  pass &= motorsTest();
-  pass &= imu6Test();
-  pass &= sensfusion6Test();
-  pass &= controllerTest();
-
-  return pass;
+    bool pass = true;
+    
+    pass &= motorsTest();
+    pass &= imu6Test();
+    pass &= sensfusion6Test();
+    pass &= controllerTest();
+    
+    return pass;
 }
 
 static uint16_t limitThrust(int32_t value)
 {
-  if(value > UINT16_MAX)
-  {
-    value = UINT16_MAX;
-  }
-  else if(value < 0)
-  {
-    value = 0;
-  }
-
-  return (uint16_t)value;
+    if(value > UINT16_MAX)
+    {
+        value = UINT16_MAX;
+    }
+    else if(value < 0)
+    {
+        value = 0;
+    }
+    
+    return (uint16_t)value;
 }
 
 // Update the control signal with LQR gain (Called from stabilizerTask)
@@ -672,7 +696,7 @@ void updateControlSignal(void){
     
     int i,j;
     
-    float y[8] = {(3.14*eulerRollActual)/180, (3.14*eulerPitchActual)/180, (3.14*eulerYawActual)/180, (3.14/180)*gyro.x, (3.14/180)*gyro.y, (3.14/180)*gyro.z, posZ, velZ};
+    float y[8] = {(3.14/180)*eulerRollActual, (3.14/180)*eulerPitchActual, (3.14/180)*eulerYawActual, (3.14/180)*gyro.x, (3.14/180)*gyro.y, (3.14/180)*gyro.z, posZ, velZ};
     
     /* Multiplying matrix a and b and storing in array mult. */
     for(i=0; i< 4; ++i){
