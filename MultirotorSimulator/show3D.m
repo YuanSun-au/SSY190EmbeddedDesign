@@ -139,9 +139,9 @@ axis square
 xlabel('X')
 ylabel('Y')
 zlabel('Z')
-xlim([-3 3])
-ylim([-3 3])
-zlim([-3 3])
+xlim([-5 5])
+ylim([-5 5])
+zlim([-5 5])
 % view(handles.AZval,handles.ELval)
 % grid on
 % 
