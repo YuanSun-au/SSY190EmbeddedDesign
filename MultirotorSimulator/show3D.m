@@ -1,117 +1,30 @@
-function show3D( mr )
+function show3D( mr, gr )
 clf
 % usage: show3D( createMultirotor())
-
-% black is rear, blue is front if X config
-
-%mostly used https://github.com/dch33/Quad-Sim/blob/master/Quadcopter%20Dynamic%20Modeling%20and%20Simulation/Graphical%20User%20Interfaces/QuadAnim4.m
-
-% Generate the geometry used to draw the quadcopter
-% r = 0.025; d = 0.06; h = .015; %inches: rotor dia., quad motor distance from d = sqrt(2)*0.032;
-% % center of mass, and rotor height above arms (entirely cosmetic)
-% a = 0.025; b = 0.03; c = 0.015; % Top , bottom, and sides lengths of hub (?)
-r = .5; d = 1.25; h = .25; %inches: rotor dia., quad motor distance from 
-% center of mass, and rotor height above arms (entirely cosmetic)
-a = 1; b = 1; c = 0.2; % Top , bottom, and sides lengths of hub (?)
-
-
-% Construct rotor representations
-N = [d  0 h].';% m1 rotor center [X Y Z]
-E = [0 -d h].';% m4 rotor center
-W = [0  d h].';% m2 rotor center
-S = [-d 0 h].';% m3 rotor center
-Nr = circlePoints(N, r, 10); Nr = [Nr Nr(:,1)]; % Rotor blade circles
-Er = circlePoints(E, r, 10); Er = [Er Er(:,1)];
-Wr = circlePoints(W, r, 10); Wr = [Wr Wr(:,1)];
-Sr = circlePoints(S, r, 10); Sr = [Sr Sr(:,1)];
-% Motors connecting to center of blade circles
-mN = [d,d;
-      0,0;
-      h,0];
-mE = [0,0;
-     -d,-d;
-      h,0];
-mW = [0,0;
-      d,d;
-      h,0];
-mS = [-d,-d;
-       0,0;
-       h,0];
-% Construct body plot points
-bNS = [ d, -d;
-        0,  0;
-        0,  0]; %For drawing the body "X" shape
-bEW = [ 0,  0;
-        d, -d;
-        0,  0];
-% Body (HUB) Squares
-Top = [ a/2,   0,-a/2,   0;
-          0, b/2,   0,-b/2;
-        c/2, c/2, c/2, c/2];
-Bot = vertcat(Top(1:2,:),-Top(3,:)); % Bot is same as top just below the center of mass
-NEB = [ a/2, a/2,   0,   0;
-          0,   0, b/2, b/2;
-        c/2,-c/2,-c/2, c/2]; % By the way... north east is actually north west from above since x is north and y is east :P
-NWB = [ a/2, a/2,   0,   0;
-          0,   0,-b/2,-b/2;
-        c/2,-c/2,-c/2, c/2];
-SEB = -NWB;
-SWB = -NEB;
 
 % ROTATION MATRIX --- ZYX ROTATION (R = Rib)
 R = [cos(mr.Yaw)*cos(mr.Pitch) cos(mr.Yaw)*sin(mr.Pitch)*sin(mr.Roll)-sin(mr.Yaw)*cos(mr.Roll) cos(mr.Yaw)*sin(mr.Pitch)*cos(mr.Roll)+sin(mr.Yaw)*sin(mr.Roll);
        sin(mr.Yaw)*cos(mr.Pitch) sin(mr.Yaw)*sin(mr.Pitch)*sin(mr.Roll)+cos(mr.Yaw)*cos(mr.Roll) sin(mr.Yaw)*sin(mr.Pitch)*cos(mr.Roll)-cos(mr.Yaw)*sin(mr.Roll);
        -sin(mr.Pitch)         cos(mr.Pitch)*sin(mr.Roll)                            cos(mr.Pitch)*cos(mr.Roll)];
 
-% % Rotate body frame velocity vector
-% U = ones(3,1);%A(:,7);
-% V = zeros(3,1);%A(:,8);
-% W = zeros(3,1);%A(:,9);
-% Vi = zeros(3,3);
-% MvMax= max(sqrt(U.^2+V.^2+W.^2)); 
-% Vb = 3/MvMax*[U(1), V(1), W(1)]'; % Scale velocity
-% Vi(1,:) = R*Vb; % Rotate velocity vector to inertial frame for plotting
-
-% Support for X-configuration
-if (strcmp(mr.Mixing, 'X'))
-    Rz = [ sqrt(2)/2, sqrt(2)/2, 0;
-          -sqrt(2)/2,sqrt(2)/2, 0;
-                   0,          0, 1];
-    Nr = Rz*Nr;
-    Er = Rz*Er;
-    Wr = Rz*Wr;
-    Sr = Rz*Sr;
-    mN = Rz*mN;
-    mE = Rz*mE;
-    mW = Rz*mW;
-    mS = Rz*mS;
-    bNS = Rz*bNS;
-    bEW = Rz*bEW;
-    Top = Rz*Top;
-    Bot = Rz*Bot;
-    NEB = Rz*NEB;
-    NWB = Rz*NWB;
-    SWB = Rz*SWB;
-    SEB = Rz*SEB;
-end
 
 % Rotate body parts Via Initialized R
-NrR = mr.Pos*ones(1,11) + R*Nr;
-ErR = mr.Pos*ones(1,11) + R*Er;
-WrR = mr.Pos*ones(1,11) + R*Wr;
-SrR = mr.Pos*ones(1,11) + R*Sr;
-mNr = mr.Pos*ones(1,2) + R*mN;
-mEr = mr.Pos*ones(1,2) + R*mE;
-mWr = mr.Pos*ones(1,2) + R*mW;
-mSr = mr.Pos*ones(1,2) + R*mS;
-bNSR = mr.Pos*ones(1,2) + R*bNS;
-bEWR = mr.Pos*ones(1,2) + R*bEW;
-TopR = mr.Pos*ones(1,4) + R*Top;
-BotR = mr.Pos*ones(1,4) + R*Bot;
-NEBR = mr.Pos*ones(1,4) + R*NEB;
-NWBR = mr.Pos*ones(1,4) + R*NWB;
-SWBR = mr.Pos*ones(1,4) + R*SWB;
-SEBR = mr.Pos*ones(1,4) + R*SEB;
+NrR = mr.Pos*ones(1,11) + R*gr.Nr;
+ErR = mr.Pos*ones(1,11) + R*gr.Er;
+WrR = mr.Pos*ones(1,11) + R*gr.Wr;
+SrR = mr.Pos*ones(1,11) + R*gr.Sr;
+mNr = mr.Pos*ones(1,2) + R*gr.mN;
+mEr = mr.Pos*ones(1,2) + R*gr.mE;
+mWr = mr.Pos*ones(1,2) + R*gr.mW;
+mSr = mr.Pos*ones(1,2) + R*gr.mS;
+bNSR = mr.Pos*ones(1,2) + R*gr.bNS;
+bEWR = mr.Pos*ones(1,2) + R*gr.bEW;
+TopR = mr.Pos*ones(1,4) + R*gr.Top;
+BotR = mr.Pos*ones(1,4) + R*gr.Bot;
+NEBR = mr.Pos*ones(1,4) + R*gr.NEB;
+NWBR = mr.Pos*ones(1,4) + R*gr.NWB;
+SWBR = mr.Pos*ones(1,4) + R*gr.SWB;
+SEBR = mr.Pos*ones(1,4) + R*gr.SEB;
 
 % Plot the box rotation and ang. velocity and inertial frame velocity
 % vector
@@ -134,7 +47,8 @@ ne  = fill3(NEBR(1,:),NEBR(2,:),NEBR(3,:),'c'); alpha(ne,0.8); % North East surf
 nw  = fill3(NWBR(1,:),NWBR(2,:),NWBR(3,:),grey); alpha(nw,0.8); % North West surface
 sw  = fill3(SWBR(1,:),SWBR(2,:),SWBR(3,:),'k'); alpha(sw,0.8); % South West surface
 se  = fill3(SEBR(1,:),SEBR(2,:),SEBR(3,:),grey); alpha(se,0.8); % South East surface
-plot3( [0 0.3*mr.Omega(1)], [0 0.3*mr.Omega(2)],[0 0.3*mr.Omega(3)]);
+% tempomega = 1e5*mr.Inertia*(inv(R)*mr.Omega)
+% plot3( [0 tempomega(1)], [0 tempomega(2)],[0 tempomega(3)]);
 axis square
 xlabel('X')
 ylabel('Y')
@@ -154,27 +68,4 @@ zlim([-5 5])
 % qp2 = quiver3(0,0,0,Vi(1,1),Vi(1,2),Vi(1,3),'k');
 % hold off
 
-
-
-
-
-
-
-end
-
-function points = circlePoints(center, radius, numberOfPoints)
-% Helper function for plotting points
-% Inspired by "circle()" from Peter Corke's MATLAB Robotics Toolbox
-c = center.'; % [x;y] location of center
-r = radius;
-n = numberOfPoints;
-% compute points around the circumference
-th = (0:n-1)'/n*2*pi; % angles coresponding to each point
-x = r*cos(th) + c(1); % x part
-y = r*sin(th) + c(2); % y part
-points = [x,y].';
-    if length(c) > 2
-        z = ones(size(x))*c(3); % z part
-        points = [x, y, z].';
-    end
 end
